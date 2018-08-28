@@ -80,8 +80,8 @@ from libtiff import TIFF
 
 ### Script Info
 __author__ = 'Nick Chahley, https://github.com/nickchahley'
-__version__ = '0.2.2'
-__day__ = '2018-06-25'
+__version__ = '0.2.3'
+__day__ = '2018-08-28'
 
 ### Command line flags/options
 def parse_args():
@@ -182,10 +182,10 @@ def cleanup_filenames(filenames):
                 # match digits at end of string
                 m = re.search('\d+$', sp)
                 if not m:
-                    # string does not end in num
+                    # string does not end in num, ex. '01-blue.tif'
                     new = s
                 else:
-                    # string ends in num
+                    # string ends in num, ex. '01-blue-2.tif'
                     endnum = m.group()
                     new = endnum.join(sp.split(endnum)[:-1])
                     if new[-1] == '-':
@@ -222,16 +222,9 @@ def group_images(filenames):
     Return a dict containing image numbers as keys and a list of their
     associated filenames as values. 
     
-    Issue: Numeric prefix was assumed to be always two digits, which is not
-    the case. The `n+'-'` is too general and files w/ 3 digit prefixis will be
-    grouped with 2 digit ones if they contain that 2 digit number. 
-    eg,
-        [01]-red.tif  : group 01
-        1[01]-red.tif : group 01
-    TODO: regex or something to tighten this up. This is also solved by
-    prepending 0 to the 2 digit files, 
-        rename 's/(^\d{2}-)/0$1/' *.tif
-
+    2018-08-28
+    Should now not include files like 101-red.tif in group 01.
+    
     filenames : list
     ret channels : dict
 
@@ -239,14 +232,14 @@ def group_images(filenames):
         <dd>-<color[text]>.tif : for 1st scans "norm"
         <dd>-<color[text]>-<d>.tif : for 2nd+ scans "extra"
     """
-    # Get one list item for each unique image number
     nums = [f.split('-')[0] for f in filenames]
     nums = sorted(set(nums)) # rm repeats and back to sorted list
     
+
     # Make dict of img num and channel files
     channels = [] 
     for n in nums:
-        channels.append([f for f in filenames if n+'-' in f])
+        channels.append([f for f in filenames if n == f.split('-')[0]])
     channels.sort()
     channels = dict(zip(nums, channels))
 
