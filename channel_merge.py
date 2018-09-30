@@ -80,8 +80,8 @@ from libtiff import TIFF
 
 ### Script Info
 __author__ = 'Nick Chahley, https://github.com/nickchahley'
-__version__ = '0.2.3'
-__day__ = '2018-08-28'
+__version__ = '0.2.4'
+__day__ = '2018-08'
 
 ### Command line flags/options
 def parse_args():
@@ -307,7 +307,7 @@ def tiffs_iterate_combos(d):
     return imgs
 
 ## Resturaunt Nouveau System
-def preproc_imgs(imgs, sigma, oudtdir='preproc'):
+def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
     """ 
     Hastily commented preprocessing. 'uids' is a dumb name for this dict.
 
@@ -332,7 +332,7 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc'):
                     uid = '-'.join((k, str(i+1)))
                     uids[uid] = imls[i]
         return uids
-    def illum_correction(x, sigma, method='subtract'):
+    def illum_correction(x, sigma, mode='nearest', method='subtract', cval=0):
         """ 
         Gaussian blurr background subtraction.
 
@@ -343,8 +343,13 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc'):
         This correction is only aware of the single image/channel that it is fed.
         It might be a better idea to try and implement illumination correction
         using multiple channels/images taken from the same experiment.
+
+        cval is only used if (edge handling) mode='constant', in which case the
+        gaussian extrapolates the value of all pixels past the image edge to be
+        equal to cval. I found a constant mode to often introduce artifiacts at
+        the corners of the image so I wouldn't recommend it anyways
         """
-        y = ndi.gaussian_filter(x, sigma=sigma, mode='constant', cval=0)
+        y = ndi.gaussian_filter(x, sigma=sigma, mode=mode, cval=cval)
         if method == 'subtract':
             return cv2.subtract(x, y)
         elif method == 'divide':
@@ -362,7 +367,7 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc'):
         ims = [tiffread(f) for f in imls] 
 
         # Guassian blur bg subtraction for each channel
-        ims_corr = [illum_correction(x, sigma) for x in ims]
+        ims_corr = [illum_correction(x, sigma, mode) for x in ims]
 
         try:
             rgb[uid] = np.dstack(ims_corr)
