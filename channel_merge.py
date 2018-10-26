@@ -333,7 +333,7 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
                     uid = '-'.join((k, str(i+1)))
                     uids[uid] = imls[i]
         return uids
-    def illum_correction(x, sigma, mode='constant', method='subtract'):
+    def illum_correction(x, sigma, mode='nearest', method='subtract'):
         """ 
         Gaussian blurr background subtraction.
 
