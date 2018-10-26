@@ -92,15 +92,13 @@ e.g.,
 Issues
 ------
 
-Written assuming less than 100 input image groups. Files w/ 3 digit prefixis will be
-grouped with 2 digit ones if they contain that 2 digit number. 
-eg,
+This shouldn't be an issue anymore but watch out for it.
+
+~~Written assuming less than 100 input image groups. Files w/ 3 digit prefixis
+will be grouped with 2 digit ones if they contain that 2 digit number.~~
+~~eg,~~
 
     [01]-red.tif  : group 01
     1[01]-red.tif : group 01
 
-TODO: regex or something to tighten this up. This is also solved by
-prepending 0 to the 2 digit files. E.g, by running
-
-    rename 's/(^\d{2}-)/0$1/' *.tif
 
