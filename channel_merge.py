@@ -80,8 +80,8 @@ from libtiff import TIFF
 
 ### Script Info
 __author__ = 'Nick Chahley, https://github.com/nickchahley'
-__version__ = '0.2.4'
-__day__ = '2018-08'
+__version__ = '0.2.3'
+__day__ = '2018-08-28'
 
 ### Command line flags/options
 def parse_args():
@@ -307,6 +307,7 @@ def tiffs_iterate_combos(d):
     return imgs
 
 ## Resturaunt Nouveau System
+# Did I mess up using constant as filter mode?
 def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
     """ 
     Hastily commented preprocessing. 'uids' is a dumb name for this dict.
@@ -332,7 +333,7 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
                     uid = '-'.join((k, str(i+1)))
                     uids[uid] = imls[i]
         return uids
-    def illum_correction(x, sigma, mode='nearest', method='subtract', cval=0):
+    def illum_correction(x, sigma, mode='constant', method='subtract'):
         """ 
         Gaussian blurr background subtraction.
 
@@ -343,13 +344,8 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
         This correction is only aware of the single image/channel that it is fed.
         It might be a better idea to try and implement illumination correction
         using multiple channels/images taken from the same experiment.
-
-        cval is only used if (edge handling) mode='constant', in which case the
-        gaussian extrapolates the value of all pixels past the image edge to be
-        equal to cval. I found a constant mode to often introduce artifiacts at
-        the corners of the image so I wouldn't recommend it anyways
         """
-        y = ndi.gaussian_filter(x, sigma=sigma, mode=mode, cval=cval)
+        y = ndi.gaussian_filter(x, sigma=sigma, mode=mode, cval=0)
         if method == 'subtract':
             return cv2.subtract(x, y)
         elif method == 'divide':

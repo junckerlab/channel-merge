@@ -7,6 +7,15 @@ applying a simple correction for uneven illumination.
 - openCV
 - [PyLibTiff](https://github.com/pearu/pylibtiff)
 
+**Q:** "Why is this Python 2?"
+
+**A:** OSX/MacOS (at the time of writing) ship with Python 2.7 installed by
+default. I targeted that when I first wrote this because I had delusions of
+writing a simple merge script that would run on other lab members' laptops
+without any additional installs. Python 2 remains as fallout of this. The
+dependencies like openCV and PyLibTiff crush that possiblity pretty good and
+I've come to realize that I should always just strongly suggest a conda
+installation for anyone using these scripts.
 
 Usage
 -----
