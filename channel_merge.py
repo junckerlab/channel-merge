@@ -307,7 +307,6 @@ def tiffs_iterate_combos(d):
     return imgs
 
 ## Resturaunt Nouveau System
-# Did I mess up using constant as filter mode?
 def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
     """ 
     Hastily commented preprocessing. 'uids' is a dumb name for this dict.
