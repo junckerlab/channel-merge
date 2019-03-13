@@ -3,19 +3,7 @@ applying a simple correction for uneven illumination.
 
 ----
 # Dependencies
-- Python 2.7 (if you need to install, [Anaconda](https://www.anaconda.com/download/) is recommended)
-- openCV
-- [PyLibTiff](https://github.com/pearu/pylibtiff)
-
-**Q:** "Why is this Python 2?"
-
-**A:** OSX/MacOS (at the time of writing) ship with Python 2.7 installed by
-default. I targeted that when I first wrote this because I had delusions of
-writing a simple merge script that would run on other lab members' laptops
-without any additional installs. Python 2 remains as fallout of this. The
-dependencies like openCV and PyLibTiff crush that possiblity pretty good and
-I've come to realize that I should always just strongly suggest a conda
-installation for anyone using these scripts.
+- Python 3 ([Anaconda](https://www.anaconda.com/download/) is recommended)
 
 Usage
 -----
@@ -39,66 +27,65 @@ on image set.
 Input Filenames
 ---------------
 
-Metadata about image and channel identity will be extracted from filenames;
-trying to ignore bright field images and handle typos. If there's more than one
-tiff of a given color channel, will create additional merges of all possible
-combinations of rgb channels.
+Image and channel identity will be extracted from filenames, while trying to
+ignore bright field images and handle typos. If there's more than one tiff of a
+given color channel, will create additional merges of all possible combinations
+of rgb channels.
 
 ### Naming Conventions
+
 Assumes the following file naming conventions: 
 - `<id>-<channel_name>[-#].tif` 
 - where `-#` is an optional number in the event of multiple same-channel images, e.g.,
 
-```
+
     01-red.tif
-    23-blue-2.tif   # an alternative blue channel scan of img 23
-<<<<<<< HEAD
-=======
-	14-green3.tif   # an alt green scan of img 14
->>>>>>> dev
-```
+    23-blue-2.tif    # an alternative blue channel scan of img 23
+    14-green-3.tif   # an alt green scan of img 14
+    100-blue.tif     # 3 digit ids are fine too
 
-Whitespace will be replaced with `-`. This *could* overwrite data if you had two files with identical names sans ` ` and `-`. 
+
+The script will attempt to rename files to adhere to the naming convention.
+Whitespace will be replaced with `-` and trailing digits are interpreted
+alternative scan numbers and will be renamed with a separating `-`. 
+
 e.g.,
 
-	01 red 3.tif >> 01-red-3.tif
-	01 red-3.tif >> 01-red-3.tif    # will clobber the file above
+    # Whitespace
+    01 red 3.tif >> 01-red-3.tif
+    01 red-3.tif >> 01-red-3.tif    
 
-Trailing digits are interpreted alternative scan numbers and will be renamed
-with a separating `-`. This, again, has clobber potential,
-e.g.,
-
-	01-red2.tif  >> 01-red-2.tif
-	01-red 2.tif >> 01-red-2.tif    # will clobber the file above
-	01 red 2.tif >> 01-red-2.tif    # will clobber the file above
+    Trailing digits
+    01-red2.tif  >> 01-red-2.tif
+    01-red 2.tif >> 01-red-2.tif    
+    01 red 2.tif >> 01-red-2.tif    
 
 ### Spelling Errors
+
 The first letter of a file's `channel_name` is taken to imply it's color.
 e.g.,
 
-	01-reed.tif        # red
-	44-guleinoiena.tif # green
-	10-b.tif           # blue
-	10-bfue.tif        # excluded (see Brightfield Exclusion below)
+    01-reed.tif        # red
+    44-guleinoiena.tif # green
+    10-b.tif           # blue
+    10-bfue.tif        # excluded (see Brightfield Exclusion below)
 
 ### Brightfield Exclusion
+
 Any .tif with a `channel_name` *starting with* `bf` is assumed to be a brightfield image and is excluded from any merges. So as long as blue channels are not named `bf*` things should be okay.
 e.g.,
 
-	01-bf.tif, 01-bflue.tif, 01-bf_actuallybluetrustme.tif # excluded
-	01-bl.tif, 01-blbfue.tif  # blue
+    01-bf.tif, 01-bflue.tif, 01-bf_actuallybluetrustme.tif # excluded
+    01-bl.tif, 01-blbfue.tif  # blue
+
 
 
 Issues
 ------
 
-This shouldn't be an issue anymore but watch out for it.
+This scenario
 
-~~Written assuming less than 100 input image groups. Files w/ 3 digit prefixis
-will be grouped with 2 digit ones if they contain that 2 digit number.~~
-~~eg,~~
+    02-blue-3.tif
+    02-blue3.tif
 
-    [01]-red.tif  : group 01
-    1[01]-red.tif : group 01
-
-
+Will result in the second file being ignored without raising a warning.
