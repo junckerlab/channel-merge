@@ -57,23 +57,26 @@ def main(args):
 
     # FREEDOM
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-p', '--defdir', type=str, 
+    parser.add_argument('-p', '--defdir', type=str, metavar='PATH',
                         help='Open the path dialog in this dir')
     parser.add_argument('-s', '--sigma', type=float, default=50., 
                         help='Sigma value for gaussian blur during illumination \
                         correction. Note: the useable range for this value is \
-                        greatly dependent on the image set. Best to experiment.')
-    parser.add_argument('-d', '--outdir', type=str, help='Name of dir to output \
-                        merged images to. Created if DNE.', default='merged_corrected') 
+                        greatly dependent on the image set. Best to experiment. \
+                        (def: 50.0)')
+    parser.add_argument('-d', '--outdir', type=str, metavar='PATH',
+                        help='Name/path of dir to output merged images to. \
+                        Relative to the directory containing the images to be \
+                        merged. Created if DNE. (def: merged_corrected)',
+                        default='merged_corrected') 
     parser.add_argument('-n', '--nopop', action='store_true', dest='no_popup',
                         help='Supress "Run Complete" popup message. Useful for \
                         batch running, since otherwise the message must be closed \
                         by user input before the script exits.')
-    parser.add_argument('--path', type=str, 
+    parser.add_argument('--path', type=str, metavar='PATH',
                         help='skip gui and load ims from this dir')
     # possible future: preprocess on/off 
     args = parser.parse_args()
