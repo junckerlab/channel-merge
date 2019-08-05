@@ -13,12 +13,13 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import askdirectory
+import re
 
 # Script Info
 __author__  = 'Nick Chahley, https://github.com/nickchahley'
 __url__     = 'https://github.com/junckerlab/channel_merge'
-__version__ = '1.0'
-__day__     = '2019-03-12'
+__version__ = '1.1'
+__date__     = '2019-08-05'
 
 
 def main(args):
@@ -33,7 +34,7 @@ def main(args):
 
     # Filename String Manipulations
     print('Formatting filenames...')
-    filenames = cleanup_filenames(glob("*.tif"))
+    filenames = cleanup_filenames(glob('*.tif'))
     channels = group_images(filenames)
     imgs = tiffs_iterate_combos(channels)
 
@@ -50,6 +51,9 @@ def main(args):
     # Write the rgb stacks to files in output dir
     for fname, im in rgb.items():
         tiffwrite('/'.join((args.outdir, fname)), im)
+
+    # Cleanup any tmp files
+    cleanup()
 
     if args.path:
         # go back to root as to not mess up next script exec
@@ -144,7 +148,6 @@ def cleanup_filenames(filenames):
     def format_filenames(filenames):
 
         def format_trailing_nums(s):
-            import re
 
             # trim .extension
             sp = '.'.join(s.split('.')[:-1])
@@ -239,9 +242,49 @@ def tiffs_iterate_combos(channels):
     imgs : dict of lists of tuples. Each tuple is one rgb combination. Each 
         list is all tuples for a given image number.
     """
+    def allow_two_channels(im_id, colors):
+        """ If there are exactly two channels, fill the empty channel with a
+        dummy plug so that the two channel im will still be merged down the
+        line. Format will be "<im_id>-<r/b/c>.dummy"
+        """
+        def is_two_channels(d):
+            n_ch = 0
+            for k, v in d.items():
+                if len(v) > 0:
+                    n_ch += 1
+            if n_ch == 2:
+                return True
+            else:
+                return False
+        def generate_dummy_tif(dummy_name, model_tif):
+            """ Create a tif with all pixels set to 0 with the same shape and
+            dtype as model_tif (the name of an actual tif file to open and read
+            from).
+            """
+            model = tiffread(model_tif)
+            dummy = np.zeros_like(model)
+            tiffwrite(dummy_name, dummy)
+        if is_two_channels(colors):
+            # model_tif will get overwritten, fine, just need one im to sample
+            # shape of dummy from
+            dummy_name = None
+            model_tif = None
+            for ch, filenames in colors.items():
+                if len(filenames) == 0:
+                    dummy_name = '%s-%s.dummy' %(im_id, ch)
+                    filenames.append(dummy_name)
+                elif len(filenames) == 1:
+                    # grab the only filename
+                    model_tif = filenames
+                else:
+                    # grab the first filename
+                    model_tif = filenames[0]
+            generate_dummy_tif(dummy_name, model_tif)
+        return colors
 
     imgs = {}
     bad_files = []
+
     for im_id, filenames in channels.items():
 
         colors = {'r' : [],
@@ -263,6 +306,9 @@ def tiffs_iterate_combos(channels):
             except IndexError as e:
                 bad_files.append(f)
 
+        # if exactly two channels exist add a dummy plug for the third
+        colors = allow_two_channels(im_id, colors)
+
         # choose one item from each list, making all possible combos
         combos = [p for p in itertools.product(*colors.values())]
 
@@ -270,7 +316,6 @@ def tiffs_iterate_combos(channels):
         combos = [sorted(t, reverse=True) for t in combos]
 
         imgs[im_id] = combos 
-
 
     # bad_files is an exit flag is so that if multiple uninferable colors
     # exist, all of them are printed, and the user doesn't end up fixing a
@@ -292,7 +337,7 @@ def tiffs_iterate_combos(channels):
     # dict( list( tuple ) )
     return imgs
 
-def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
+def preproc_imgs(imgs, sigma, mode='nearest'):
     """ 
     Hastily commented preprocessing. 'uids' is a dumb name for this dict.
 
@@ -317,6 +362,8 @@ def preproc_imgs(imgs, sigma, oudtdir='preproc', mode='nearest'):
                     uid = '-'.join((k, str(i+1)))
                     uids[uid] = imls[i]
         return uids
+    def fill_missing_channels(imls):
+        return
     def illum_correction(x, sigma, mode='nearest', method='subtract'):
         """ 
         Gaussian blurr background subtraction.
@@ -392,18 +439,20 @@ def tiffread(f):
     try:
         if type(f) is str:
             # single image
-            im = tf.imread(f)
-            return im
-
-        elif type(f) is list and len(f) == 3:
-            # return rgb stack
-            f.sort(reverse=True) # so r, g, b
-            ims = [tf.imread(x) for x in f]
-            return np.dstack(ims)
+            return tf.imread(f)
+        elif type(f) is list:
+            if len(f) == 1:
+                # single image
+                return tf.imread(f[0])
+            elif len(f) == 3:
+                # return rgb stack
+                f.sort(reverse=True) # so r, g, b
+                ims = [tf.imread(x) for x in f]
+                return np.dstack(ims)
         else:
-            raise ValueError("f must be a string or list of 3 strings")
-    except tf.tifffile.TiffFileError:
-        sys.exit(bcolors.FAIL+'ERROR: %s is not a tiff file. Exiting' %f)
+            raise ValueError("f must be a string or list of 1 or 3 strings")
+    except ValueError as e:
+        sys.exit(bcolors.FAIL+'ERROR reading %s: %s' %(f, e))
 
 def tiffwrite(filename, im):
     """ Write numpy.ndarray to tif.
@@ -415,6 +464,15 @@ def tiffwrite(filename, im):
     im : numpy.ndarray
     """
     tf.imwrite(filename, im)
+
+def cleanup():
+    # remove any generated dummy tifs
+    dummy_files = glob('*.dummy')
+    for f in dummy_files:
+        try:
+            os.remove(f)
+        except OSError as e:
+            print('Error removing dummy file %s:' %f, e)
 
 class bcolors:
     HEADER = '\033[95m'
